@@ -1,0 +1,10 @@
+.next/
+node_modules/
+.env*
+!.env.example
+coverage/
+public/chromium-pack.tar
+tsconfig.tsbuildinfo
+
+.vercel
+.env*
