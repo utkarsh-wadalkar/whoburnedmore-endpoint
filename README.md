@@ -45,7 +45,7 @@ Install dependencies with Node 22 or later:
 pnpm install
 ```
 
-The install step downloads a Chromium runtime pack to `public/chromium-pack.tar`; it is intentionally ignored by Git. For local rendering, point the service to a locally installed Chrome or Chromium executable:
+For local rendering, point the service to a locally installed Chrome or Chromium executable:
 
 ```powershell
 $env:CHROME_EXECUTABLE_PATH = 'C:\Program Files\Google\Chrome\Application\chrome.exe'
@@ -64,7 +64,7 @@ pnpm build
 vercel --prod
 ```
 
-The Vercel build runs the same Chromium-pack preparation step. At runtime, `@sparticuz/chromium-min` downloads the archive from the current deployment's `/chromium-pack.tar` public asset and caches the extracted browser within a warm function. Set `CHROMIUM_PACK_URL` to an HTTPS CDN URL if you prefer to host that archive elsewhere.
+At runtime, `@sparticuz/chromium-min` downloads the official Sparticuz Chromium archive and caches the extracted browser within a warm function. Set `CHROMIUM_PACK_URL` to an HTTPS URL if you prefer to host a compatible archive yourself.
 
 The first uncached request starts Chromium, so Vercel's Hobby timeout may be too short for reliable cold renders. Use a plan with a longer function duration for production traffic.
 

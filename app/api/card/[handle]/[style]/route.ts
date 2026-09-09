@@ -29,10 +29,27 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
     const card = await renderOfficialCard(handle, style);
     return createCardImageResponse(card.bytes, card.contentType);
   } catch (error) {
+    console.error("WhoBurnedMore card render failed", {
+      handle,
+      style,
+      error: formatError(error),
+    });
+
     if (error instanceof CardRenderError && error.kind === "not-found") {
       return createCardErrorResponse("This WhoBurnedMore profile is missing or private.", 404);
     }
 
     return createCardErrorResponse("WhoBurnedMore could not render this card. Try again shortly.", 502);
   }
+}
+
+function formatError(error: unknown): Record<string, string | undefined> {
+  if (!(error instanceof Error)) return { message: String(error) };
+
+  return {
+    cause: error.cause instanceof Error ? error.cause.message : undefined,
+    message: error.message,
+    name: error.name,
+    stack: error.stack,
+  };
 }

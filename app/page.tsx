@@ -51,7 +51,7 @@ export default function Home() {
         </a>
         <nav aria-label="Primary navigation" className="site-nav">
           <a href="#playground">Try it</a>
-          <a href="#integration">Docs</a>
+          <a href="/docs">Docs</a>
           <a href="https://github.com/utkarsh-wadalkar/whoburnedmore-endpoint">Source</a>
         </nav>
       </header>
@@ -71,8 +71,8 @@ export default function Home() {
               <a className="button button-primary" href="#playground">
                 Build your URL
               </a>
-              <a className="text-link" href="#integration">
-                Read the API
+              <a className="button button-secondary" href="/docs">
+                Read the docs
               </a>
             </div>
           </div>
@@ -153,6 +153,9 @@ export default function Home() {
             <a className="text-link" href="https://whoburnedmore.com">
               Visit WhoBurnedMore
             </a>
+            <a className="text-link integration-docs-link" href="/docs">
+              Read full documentation
+            </a>
           </div>
 
           <div className="code-bezel">
@@ -189,7 +192,6 @@ export default function Home() {
           <span>cards</span>
         </a>
         <p>Made for public WhoBurnedMore profiles.</p>
-        <a href="https://github.com/utkarsh-wadalkar/whoburnedmore-endpoint">Open source</a>
       </footer>
     </>
   );

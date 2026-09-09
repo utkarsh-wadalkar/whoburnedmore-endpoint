@@ -83,7 +83,14 @@ export function CardPlayground({ baseUrl, initialHandle }: { baseUrl: string; in
         </div>
 
         <div className={`card-stage card-stage-${style}`}>
-          {imageState === "loading" ? <span className="image-skeleton" /> : null}
+          {imageState === "loading" ? (
+            <>
+              <span className="image-skeleton" />
+              <p className="preview-loading" role="status">
+                Opening the official share flow…
+              </p>
+            </>
+          ) : null}
           <img
             alt={`Official WhoBurnedMore ${style} card for ${handle}`}
             className={imageState === "ready" ? "is-ready" : undefined}

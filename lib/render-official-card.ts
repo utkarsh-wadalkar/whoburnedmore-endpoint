@@ -7,6 +7,8 @@ const CARD_DOWNLOAD_KEY = "__whoburnedmoreCardDownload";
 const MAX_CARD_BYTES = 12 * 1024 * 1024;
 const PAGE_TIMEOUT_MS = 30_000;
 const CARD_TIMEOUT_MS = 20_000;
+const DEFAULT_CHROMIUM_PACK_URL =
+  "https://github.com/Sparticuz/chromium/releases/download/v152.0.0/chromium-v152.0.0-pack.x64.tar";
 
 const ALLOWED_HOSTS = new Set([
   "whoburnedmore.com",
@@ -111,7 +113,10 @@ async function launchBrowser(): Promise<Browser> {
   }
 
   const executablePath = localExecutable ?? (await chromium.executablePath(getChromiumPackUrl()));
-  const args = localExecutable ? ["--no-sandbox", "--disable-setuid-sandbox"] : chromium.args;
+  const headless = localExecutable ? true : "shell";
+  const args = localExecutable
+    ? ["--no-sandbox", "--disable-setuid-sandbox"]
+    : await puppeteer.defaultArgs({ args: chromium.args, headless });
 
   return puppeteer.launch({
     args,
@@ -124,7 +129,7 @@ async function launchBrowser(): Promise<Browser> {
       hasTouch: false,
     },
     executablePath,
-    headless: true,
+    headless,
   });
 }
 
@@ -138,18 +143,14 @@ function getChromiumPackUrl(): string {
     return parsed.toString();
   }
 
-  const deploymentUrl = process.env.VERCEL_URL;
-  if (!deploymentUrl) {
-    throw new CardRenderError(
-      "unavailable",
-      "CHROMIUM_PACK_URL is required outside a Vercel deployment.",
-    );
-  }
-
-  return `https://${deploymentUrl}/chromium-pack.tar`;
+  return DEFAULT_CHROMIUM_PACK_URL;
 }
 
 async function configurePage(page: Page): Promise<void> {
+  await page.setUserAgent(
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  );
+  await page.setExtraHTTPHeaders({ "accept-language": "en-US,en;q=0.9" });
   await page.setRequestInterception(true);
   page.on("request", (request) => {
     try {
@@ -212,22 +213,34 @@ async function waitForCardAssets(page: Page): Promise<void> {
 
 async function openShareDialog(page: Page): Promise<void> {
   await clickButtonByText(page, "body", "more cards");
-  await page.waitForFunction(() => Boolean(document.querySelector('[role="dialog"]')), {
+  await page.waitForFunction(() =>
+    Array.from(document.querySelectorAll("button")).some((button) => {
+      const text = (button.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase();
+      const rect = button.getBoundingClientRect();
+      const styles = getComputedStyle(button);
+      return (
+        text === "landscape" &&
+        rect.width > 0 &&
+        rect.height > 0 &&
+        styles.display !== "none" &&
+        styles.visibility !== "hidden" &&
+        styles.pointerEvents !== "none"
+      );
+    }),
+  {
     timeout: CARD_TIMEOUT_MS,
   });
 }
 
 async function selectStyle(page: Page, style: CardStyle): Promise<void> {
-  await clickDialogButton(page, style);
+  await clickButtonByText(page, "body", style);
   await page.waitForFunction(
     (selectedStyle) => {
-      const dialog = document.querySelector('[role="dialog"]');
-      if (!dialog) return false;
-      const button = Array.from(dialog.querySelectorAll("button")).find(
+      const button = Array.from(document.querySelectorAll("button")).find(
         (candidate) =>
           (candidate.textContent ?? "").replace(/\s+/g, " ").trim().toLowerCase() === selectedStyle,
       );
-      return button?.getAttribute("aria-pressed") === "true";
+      return button?.getAttribute("aria-pressed") === "true" || button?.dataset.state === "active";
     },
     { timeout: CARD_TIMEOUT_MS },
     style,
@@ -271,7 +284,7 @@ async function installDownloadCapture(page: Page): Promise<void> {
 }
 
 async function clickDialogButton(page: Page, label: string): Promise<void> {
-  await clickButtonByText(page, '[role="dialog"]', label);
+  await clickButtonByText(page, "body", label);
 }
 
 async function clickButtonByText(page: Page, rootSelector: string, label: string): Promise<void> {
