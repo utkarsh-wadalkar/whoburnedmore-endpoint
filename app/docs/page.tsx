@@ -69,28 +69,26 @@ export default function DocsPage() {
                 Replace <code>HANDLE</code> with any public WhoBurnedMore profile handle. Successful requests serve the official PNG card; unavailable or invalid requests return a readable image error.
               </p>
               <div className="endpoint-list">
-                <a href={`${productionUrl}/api/card/${sampleHandle}/landscape.png`}>
+                
                   <span>Landscape</span>
-                  <code>{productionUrl}/api/card/HANDLE/landscape.png</code>
-                </a>
-                <a href={`${productionUrl}/api/card/${sampleHandle}/hero.png`}>
+                  <code>{productionUrl}/api/card/PROFILE-USERNAME/landscape.png</code>
+                
+                
                   <span>Hero</span>
-                  <code>{productionUrl}/api/card/HANDLE/hero.png</code>
-                </a>
-                <a href={`${productionUrl}/api/card/${sampleHandle}/report.png`}>
+                  <code>{productionUrl}/api/card/PROFILE-USERNAME/hero.png</code>
+                
+                
                   <span>Report</span>
-                  <code>{productionUrl}/api/card/HANDLE/report.png</code>
-                </a>
+                  <code>{productionUrl}/api/card/PROFILE-USERNAME/report.png</code>
+                
               </div>
               <p>For example, a profile README can use the Landscape card:</p>
               <CodeBlock label="README markup">{`<p align="center">
-  <a href="https://whoburnedmore.com/u/${sampleHandle}">
-    <img
-      src="${productionUrl}/api/card/${sampleHandle}/landscape.png"
-      width="720"
-      alt="Utkarsh's WhoBurnedMore usage"
-    />
-  </a>
+ <a href="https://whoburnedmore.com/u/PROFILE-USERNAME">
+  <img
+    src="YOUR-URL"
+  />
+</a>
 </p>`}</CodeBlock>
               <p>Use the same URL pattern for any user and either <code>hero.png</code> or <code>report.png</code>.</p>
             </section>
@@ -104,7 +102,7 @@ export default function DocsPage() {
 Content-Type: application/json
 
 {
-  "handle": "${sampleHandle}",
+  "handle": "PROFILE-USERNAME",
   "style": "landscape"
 }`}</CodeBlock>
               <p>

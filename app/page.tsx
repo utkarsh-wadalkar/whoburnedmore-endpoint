@@ -45,15 +45,14 @@ export default function Home() {
         Skip to content
       </a>
       <header className="site-header">
-        <a aria-label="WhoBurnedMore Cards home" className="wordmark" href="#top">
-          <span className="wordmark-mark">wbm</span>
+        <a aria-label="WhoBurnedMore-Cards home" className="wordmark" href="#top">
+          <span className="wordmark-mark">wbm-</span>
           <span>cards</span>
         </a>
         <nav aria-label="Primary navigation" className="site-nav">
           <a href="#playground">Try it</a>
           <a href="/docs">Docs</a>
           <a href="/status">Status</a>
-          <a href="https://github.com/utkarsh-wadalkar/whoburnedmore-endpoint">Source</a>
         </nav>
       </header>
 
@@ -66,7 +65,7 @@ export default function Home() {
               <span>in your README.</span>
             </h1>
             <p className="hero-lede">
-              A public image endpoint for the real WhoBurnedMore card your profile already knows how to make.
+              A public image endpoint for live WhoBurnedMore card for your profile.
             </p>
             <div className="hero-actions">
               <a className="button button-primary" href="#playground">
@@ -92,10 +91,10 @@ export default function Home() {
             <strong>The native card.</strong> Captured from the public profile share flow, never rebuilt from guessed stats.
           </p>
           <p>
-            <strong>Every public profile.</strong> The profile decides its own sources, metrics, and layout.
+            <strong>For every public profile.</strong> The profile decides its own sources, metrics, and layout.
           </p>
           <p>
-            <strong>One stable image.</strong> A 15-minute CDN cache keeps README refreshes inexpensive.
+            <strong>One stable image.</strong> A 15-minute CDN cache keeps README refreshed, inexpensive.
           </p>
         </section>
 
@@ -129,9 +128,9 @@ export default function Home() {
           <div className="playground-heading">
             <p className="kicker">Card workshop</p>
             <h2>
-              Make the link
+              Make the link once,
               <br />
-              do the work.
+              and drop it anywhere.
             </h2>
             <p>
               Enter any public handle, select a shape, then drop the URL into a README, issue, or profile page.
@@ -144,9 +143,9 @@ export default function Home() {
           <div className="integration-copy">
             <p className="kicker">The smallest integration</p>
             <h2>
-              One image tag.
+              One image tag,
               <br />
-              No maintenance.
+              for every README.
             </h2>
             <p>
               GitHub requests the image. The endpoint opens the public share flow and returns the official PNG. Cached for 15 minutes.
@@ -174,7 +173,7 @@ export default function Home() {
           <div>
             <p className="kicker">A live card, not a screenshot</p>
             <h2>
-              Publish the proof
+              Publish live proof
               <br />
               of your burn.
             </h2>
@@ -187,10 +186,10 @@ export default function Home() {
 
       <footer className="site-footer section-shell">
         <a className="wordmark" href="#top">
-          <span className="wordmark-mark">wbm</span>
+          <span className="wordmark-mark">wbm-</span>
           <span>cards</span>
         </a>
-        <p>Made for public WhoBurnedMore profiles.</p>
+        <p>Made for public WhoBurnedMore profiles only.</p>
       </footer>
     </>
   );
