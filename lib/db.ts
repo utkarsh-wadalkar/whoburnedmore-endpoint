@@ -43,7 +43,7 @@ export function getDatabasePool(): Pool {
     timezone: "Z",
   });
 
-  attachDatabasePool(databasePool);
+  attachDatabasePool(databasePool.pool);
   return databasePool;
 }
 
