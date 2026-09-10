@@ -70,22 +70,22 @@ export default function DocsPage() {
               <div className="endpoint-list">
                 
                   <span>Landscape</span>
-                  <code>{productionUrl}/api/card/PROFILE-USERNAME/landscape.png</code>
+                  <code>{productionUrl}/api/card/your-handle/landscape.png</code>
                 
                 
                   <span>Hero</span>
-                  <code>{productionUrl}/api/card/PROFILE-USERNAME/hero.png</code>
+                  <code>{productionUrl}/api/card/your-handle/hero.png</code>
                 
                 
                   <span>Report</span>
-                  <code>{productionUrl}/api/card/PROFILE-USERNAME/report.png</code>
+                  <code>{productionUrl}/api/card/your-handle/report.png</code>
                 
               </div>
               <p>For example, a profile README can use the Landscape card:</p>
               <CodeBlock label="README markup">{`<p align="center">
- <a href="https://whoburnedmore.com/u/PROFILE-USERNAME">
+ <a href="https://whoburnedmore.com/u/your-handle">
   <img
-    src="${productionUrl}/api/card/PROFILE-USERNAME/landscape.png"
+    src="${productionUrl}/api/card/your-handle/landscape.png"
   />
 </a>
 </p>`}</CodeBlock>
@@ -101,7 +101,7 @@ export default function DocsPage() {
 Content-Type: application/json
 
 {
-  "handle": "PROFILE-USERNAME",
+  "handle": "your-handle",
   "style": "landscape"
 }`}</CodeBlock>
               <p>

@@ -160,11 +160,12 @@ export default function Home() {
 
           <div className="code-bezel">
             <pre aria-label="README markup example">
-              <code>{`<a href="https://whoburnedmore.com/u/PROFILE-USERNAME">
+<code>{`<a href="https://whoburnedmore.com/u/your-handle">
   <img
-    src="${productionUrl}/api/card/PROFILE-USERNAME/landscape.png"
+    src="${productionUrl}/api/card/your-handle/landscape.png"
   />
-</a>`}</code>
+</a>`}
+</code>
             </pre>
           </div>
         </section>
