@@ -29,7 +29,6 @@ export default function DocsPage() {
             Docs
           </a>
           <a href="/status">Status</a>
-          <a href="https://github.com/utkarsh-wadalkar/whoburnedmore-endpoint">Source</a>
         </nav>
       </header>
 

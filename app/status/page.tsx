@@ -46,7 +46,6 @@ export default async function StatusPage() {
           <a aria-current="page" href="/status">
             Status
           </a>
-          <a href="https://github.com/utkarsh-wadalkar/whoburnedmore-endpoint">Source</a>
         </nav>
       </header>
 
