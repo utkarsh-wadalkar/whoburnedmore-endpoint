@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import { getDatabaseSettings, RENDERER_VERSION } from "../lib/cache-config";
-import { isFresh, normalizeEtag } from "../lib/card-service";
 import {
+  isFresh,
+  normalizeEtag,
+  retainedCardAfterRefreshFailure,
+} from "../lib/card-service";
+import {
+  createOriginMetricsRecorder,
   isAssetCleanupEligible,
   isRenderLockExpired,
+  renderBudgetAllows,
+  renderLockLeaseSeconds,
   type StoredCard,
 } from "../lib/persistent-card-store";
 import {
@@ -13,6 +20,7 @@ import {
   parseProfileSnapshot,
   type CardSourceSnapshot,
 } from "../lib/profile-snapshot";
+import { CardRenderError } from "../lib/render-official-card";
 import { calculateServicePerformance, deriveServiceState } from "../lib/service-status";
 
 const profileHtml = `<!doctype html>
@@ -133,6 +141,61 @@ describe("persistent card helpers", () => {
         now,
       ),
     ).toBe(false);
+  });
+
+  it("keeps render leases beyond the function deadline and caps render starts", () => {
+    expect(renderLockLeaseSeconds(60)).toBe(90);
+    expect(renderBudgetAllows(17)).toBe(true);
+    expect(renderBudgetAllows(18)).toBe(false);
+  });
+
+  it("retains a previous card when a background refresh fails transiently", () => {
+    const card: StoredCard = {
+      handle: "sample",
+      style: "landscape",
+      statsHash: "old-hash",
+      rendererVersion: RENDERER_VERSION,
+      imageUrl: "https://example.public.blob.vercel-storage.com/card.png",
+      imageEtag: '"old-etag"',
+      renderedAt: new Date("2026-09-10T09:00:00.000Z"),
+      sourceCheckedAt: new Date("2026-09-10T09:00:00.000Z"),
+      lastRequestedAt: new Date("2026-09-10T09:00:00.000Z"),
+    };
+    expect(
+      retainedCardAfterRefreshFailure(
+        new CardRenderError("unavailable", "Upstream timed out."),
+        card,
+        false,
+      ),
+    ).toMatchObject({ status: "ready", card, fresh: false, rendered: false });
+    expect(
+      retainedCardAfterRefreshFailure(
+        new CardRenderError("not-found", "Profile is private."),
+        card,
+        false,
+      ),
+    ).toBeNull();
+    expect(
+      retainedCardAfterRefreshFailure(
+        new CardRenderError("unavailable", "Blob repair failed."),
+        card,
+        true,
+      ),
+    ).toBeNull();
+  });
+
+  it("durably records every observed origin request without process-local buffering", async () => {
+    const persisted: Array<[number, number]> = [];
+    const recorder = createOriginMetricsRecorder(async (requests, responseMs) => {
+      persisted.push([requests, responseMs]);
+    });
+
+    await recorder(12.6);
+    await recorder(-5);
+    expect(persisted).toEqual([
+      [1, 13],
+      [1, 0],
+    ]);
   });
 
   it("derives public service state without exposing internal data", () => {

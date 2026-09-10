@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { GET } from "../app/api/card/[handle]/[style]/route";
+import { POST as PREPARE } from "../app/api/card/prepare/route";
 import { parseCardStyle, profileUrl, validateHandle } from "../lib/card";
 import {
   CARD_CACHE_CONTROL,
@@ -71,5 +72,21 @@ describe("card route helpers", () => {
 
     expect(response.status).toBe(400);
     expect(response.headers.get("content-type")).toContain("image/svg+xml");
+  });
+
+  it("rejects a null preparation body as malformed input", async () => {
+    const response = await PREPARE(
+      new Request("https://example.test/api/card/prepare", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "null",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      status: "error",
+      error: "Send a JSON body with handle and style.",
+    });
   });
 });

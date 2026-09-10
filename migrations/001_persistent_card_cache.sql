@@ -82,3 +82,9 @@ CREATE TABLE IF NOT EXISTS usage_hourly (
   origin_response_ms_sum BIGINT UNSIGNED NOT NULL DEFAULT 0,
   updated_at DATETIME(3) NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS render_rate_limits (
+  bucket_minute DATETIME NOT NULL PRIMARY KEY,
+  render_count INT UNSIGNED NOT NULL DEFAULT 0,
+  updated_at DATETIME(3) NOT NULL
+);

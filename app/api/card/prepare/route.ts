@@ -18,7 +18,11 @@ type PrepareBody = {
 export async function POST(request: Request): Promise<Response> {
   let body: PrepareBody;
   try {
-    body = (await request.json()) as PrepareBody;
+    const parsed: unknown = await request.json();
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return jsonError("Send a JSON body with handle and style.", 400);
+    }
+    body = parsed as PrepareBody;
   } catch {
     return jsonError("Send a JSON body with handle and style.", 400);
   }

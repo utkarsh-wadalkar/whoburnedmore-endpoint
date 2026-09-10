@@ -18,6 +18,7 @@ import {
 } from "./render-official-card";
 import {
   claimRenderLock,
+  cleanupRenderRateLimits,
   commitRenderedCard,
   getFreshProfileSnapshot,
   getStoredCard,
@@ -53,6 +54,21 @@ export type PrepareCardResult =
       status: "preparing";
       retryAfterSeconds: number;
     };
+
+export function retainedCardAfterRefreshFailure(
+  error: unknown,
+  previous: StoredCard | null,
+  forceRender: boolean,
+): PrepareCardResult | null {
+  if (
+    !previous ||
+    forceRender ||
+    (error instanceof CardRenderError && error.kind === "not-found")
+  ) {
+    return null;
+  }
+  return { status: "ready", card: previous, fresh: false, rendered: false };
+}
 
 type CachedPersistentCard = {
   bytes: string;
@@ -219,6 +235,8 @@ export async function preparePersistentCard(
     await recordRenderFailure(handle, style, lockToken, error).catch((metricsError) => {
       console.error("Could not record render failure", metricsError);
     });
+    const retained = retainedCardAfterRefreshFailure(error, beforeLock, Boolean(options.forceRender));
+    if (retained) return retained;
     if (error instanceof CardRenderError) throw error;
     throw new CardRenderError("unavailable", "The persistent card refresh did not complete.", {
       cause: error,
@@ -335,6 +353,7 @@ async function fetchBlobImage(imageUrl: string): Promise<Uint8Array> {
 }
 
 export async function cleanupExpiredCardAssets(): Promise<void> {
+  await cleanupRenderRateLimits();
   const assets = await listExpiredAssets();
   for (const asset of assets) {
     await del(asset.imageUrl);

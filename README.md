@@ -88,6 +88,8 @@ vercel --prod
 
 At runtime, the deployment bundles `@sparticuz/chromium`, so it does not depend on downloading a browser archive while serving a README image. Completed PNGs are also held in Next's shared Data Cache for 15 minutes, allowing GitHub's short-lived image proxy to receive cached cards promptly.
 
+TiDB render claims use a 90-second lease and a global budget of 18 new Chromium renders per minute. Cached or retained cards continue to serve while that budget is saturated, and cold preparation requests retry through the existing `202` flow. Origin metrics are written from `after()` without process-local buffering, so serverless instance retirement does not discard a pending counter batch.
+
 Configure Vercel Blob and either TiDB connection format in Vercel, then run `pnpm db:migrate` against the intended TiDB branch before enabling production persistence. Without both TiDB and Blob credentials the existing Next-cache renderer remains available and `/status` reports degraded persistence.
 
 ## Validation

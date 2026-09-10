@@ -1,18 +1,15 @@
 import { randomUUID } from "node:crypto";
 
 import type { ResultSetHeader, RowDataPacket } from "mysql2";
+import type { PoolConnection } from "mysql2/promise";
 
 import { CARD_ASSET_GRACE_SECONDS, RENDERER_VERSION } from "./cache-config";
 import type { CardStyle } from "./card";
 import { execute, withTransaction } from "./db";
 import type { CardSourceSnapshot, FetchedProfileSnapshot } from "./profile-snapshot";
 
-const ORIGIN_METRIC_FLUSH_MS = 30_000;
-
-let pendingOriginRequests = 0;
-let pendingOriginResponseMs = 0;
-let lastOriginMetricsFlushAt = 0;
-let originMetricsFlush: Promise<void> | null = null;
+const MAX_RENDER_STARTS_PER_MINUTE = 18;
+const RENDER_LOCK_LEASE_SECONDS = renderLockLeaseSeconds(60);
 
 export type StoredCard = {
   handle: string;
@@ -45,6 +42,10 @@ type ProfileRow = RowDataPacket & {
   expires_at: Date | string;
 };
 
+type RenderBudgetRow = RowDataPacket & {
+  render_count: string | number;
+};
+
 export type PendingAssetDeletion = {
   id: string;
   imageUrl: string;
@@ -60,6 +61,14 @@ export function isAssetCleanupEligible(
   now = Date.now(),
 ): boolean {
   return deleteAfter !== null && deletedAt === null && deleteAfter.getTime() <= now;
+}
+
+export function renderLockLeaseSeconds(maxDurationSeconds: number): number {
+  return maxDurationSeconds + 30;
+}
+
+export function renderBudgetAllows(currentStarts: number): boolean {
+  return currentStarts < MAX_RENDER_STARTS_PER_MINUTE;
 }
 
 export async function getStoredCard(handle: string, style: CardStyle): Promise<StoredCard | null> {
@@ -88,24 +97,59 @@ export async function claimRenderLock(
   style: CardStyle,
   lockToken: string,
 ): Promise<boolean> {
-  await execute<ResultSetHeader>(
-    `INSERT IGNORE INTO card_cache
-       (handle, style, renderer_version, last_requested_at, render_status)
-     VALUES (?, ?, ?, UTC_TIMESTAMP(3), 'empty')`,
-    [handle, style, RENDERER_VERSION],
-  );
+  return withTransaction(async (connection) => {
+    await connection.execute<ResultSetHeader>(
+      `INSERT IGNORE INTO card_cache
+         (handle, style, renderer_version, last_requested_at, render_status)
+       VALUES (?, ?, ?, UTC_TIMESTAMP(3), 'empty')`,
+      [handle, style, RENDERER_VERSION],
+    );
 
-  const result = await execute<ResultSetHeader>(
-    `UPDATE card_cache
-        SET lock_token = ?,
-            lock_expires_at = DATE_ADD(UTC_TIMESTAMP(3), INTERVAL 55 SECOND),
-            render_status = 'rendering',
-            last_requested_at = UTC_TIMESTAMP(3)
-      WHERE handle = ? AND style = ?
-        AND (lock_expires_at IS NULL OR lock_expires_at < UTC_TIMESTAMP(3))`,
-    [lockToken, handle, style],
+    const [claim] = await connection.execute<ResultSetHeader>(
+      `UPDATE card_cache
+          SET lock_token = ?,
+              lock_expires_at = DATE_ADD(UTC_TIMESTAMP(3), INTERVAL ${RENDER_LOCK_LEASE_SECONDS} SECOND),
+              render_status = 'rendering',
+              last_requested_at = UTC_TIMESTAMP(3)
+        WHERE handle = ? AND style = ?
+          AND (lock_expires_at IS NULL OR lock_expires_at < UTC_TIMESTAMP(3))`,
+      [lockToken, handle, style],
+    );
+    if (claim.affectedRows !== 1) return false;
+
+    if (await consumeRenderBudget(connection)) return true;
+
+    await connection.execute<ResultSetHeader>(
+      `UPDATE card_cache
+          SET lock_token = NULL, lock_expires_at = NULL,
+              render_status = IF(image_url IS NULL, 'empty', 'ready')
+        WHERE handle = ? AND style = ? AND lock_token = ?`,
+      [handle, style, lockToken],
+    );
+    return false;
+  });
+}
+
+async function consumeRenderBudget(connection: PoolConnection): Promise<boolean> {
+  await connection.execute<ResultSetHeader>(
+    `INSERT IGNORE INTO render_rate_limits (bucket_minute, render_count, updated_at)
+     VALUES (DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%d %H:%i:00'), 0, UTC_TIMESTAMP(3))`,
   );
-  return result.affectedRows === 1;
+  const [rows] = await connection.execute<RenderBudgetRow[]>(
+    `SELECT render_count
+       FROM render_rate_limits
+      WHERE bucket_minute = DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%d %H:%i:00')
+      FOR UPDATE`,
+  );
+  const currentStarts = Number(rows[0]?.render_count ?? MAX_RENDER_STARTS_PER_MINUTE);
+  if (!renderBudgetAllows(currentStarts)) return false;
+
+  await connection.execute<ResultSetHeader>(
+    `UPDATE render_rate_limits
+        SET render_count = render_count + 1, updated_at = UTC_TIMESTAMP(3)
+      WHERE bucket_minute = DATE_FORMAT(UTC_TIMESTAMP(), '%Y-%m-%d %H:%i:00')`,
+  );
+  return true;
 }
 
 export async function upsertProfileSnapshot(
@@ -352,30 +396,13 @@ export async function invalidateProfileCards(handle: string): Promise<void> {
   });
 }
 
-export async function recordOriginRequest(durationMs: number): Promise<void> {
-  pendingOriginRequests += 1;
-  pendingOriginResponseMs += Math.max(0, Math.round(durationMs));
-
-  if (originMetricsFlush) return originMetricsFlush;
-  if (Date.now() - lastOriginMetricsFlushAt < ORIGIN_METRIC_FLUSH_MS) return;
-
-  const requests = pendingOriginRequests;
-  const responseMs = pendingOriginResponseMs;
-  pendingOriginRequests = 0;
-  pendingOriginResponseMs = 0;
-  lastOriginMetricsFlushAt = Date.now();
-
-  originMetricsFlush = persistOriginMetrics(requests, responseMs)
-    .catch((error) => {
-      pendingOriginRequests += requests;
-      pendingOriginResponseMs += responseMs;
-      throw error;
-    })
-    .finally(() => {
-      originMetricsFlush = null;
-    });
-  return originMetricsFlush;
+export function createOriginMetricsRecorder(
+  persist: (requests: number, responseMs: number) => Promise<void>,
+): (durationMs: number) => Promise<void> {
+  return async (durationMs) => persist(1, Math.max(0, Math.round(durationMs)));
 }
+
+export const recordOriginRequest = createOriginMetricsRecorder(persistOriginMetrics);
 
 async function persistOriginMetrics(requests: number, responseMs: number): Promise<void> {
   await withTransaction(async (connection) => {
@@ -430,6 +457,14 @@ export async function markAssetDeleted(id: string): Promise<void> {
   await execute<ResultSetHeader>(
     `UPDATE card_assets SET deleted_at = UTC_TIMESTAMP(3) WHERE id = ? AND deleted_at IS NULL`,
     [id],
+  );
+}
+
+export async function cleanupRenderRateLimits(): Promise<void> {
+  await execute<ResultSetHeader>(
+    `DELETE FROM render_rate_limits
+      WHERE bucket_minute < DATE_SUB(UTC_TIMESTAMP(), INTERVAL 2 DAY)
+      LIMIT 64`,
   );
 }
 

@@ -161,11 +161,9 @@ export default function Home() {
 
           <div className="code-bezel">
             <pre aria-label="README markup example">
-              <code>{`<a href="https://whoburnedmore.com/u/${sampleHandle}">
+              <code>{`<a href="https://whoburnedmore.com/u/PROFILE-USERNAME">
   <img
-    src="${productionUrl}/api/card/${sampleHandle}/landscape.png"
-    width="720"
-    alt="AI coding token usage"
+    src="YOUR-URL"
   />
 </a>`}</code>
             </pre>
