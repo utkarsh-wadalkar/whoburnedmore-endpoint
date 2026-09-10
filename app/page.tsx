@@ -52,6 +52,7 @@ export default function Home() {
         <nav aria-label="Primary navigation" className="site-nav">
           <a href="#playground">Try it</a>
           <a href="/docs">Docs</a>
+          <a href="/status">Status</a>
           <a href="https://github.com/utkarsh-wadalkar/whoburnedmore-endpoint">Source</a>
         </nav>
       </header>

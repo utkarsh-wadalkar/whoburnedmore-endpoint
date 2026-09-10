@@ -5,6 +5,8 @@ node_modules/
 coverage/
 public/chromium-pack.tar
 tsconfig.tsbuildinfo
+.context
+.pnpm-store/
 
 .vercel
 .env*

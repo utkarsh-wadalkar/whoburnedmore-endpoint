@@ -6,6 +6,7 @@ import {
   CARD_CACHE_CONTROL,
   createCardErrorResponse,
   createCardImageResponse,
+  etagMatches,
 } from "../lib/card-response";
 
 describe("card route helpers", () => {
@@ -29,11 +30,29 @@ describe("card route helpers", () => {
   });
 
   it("serves card bytes with CDN-friendly image headers", async () => {
-    const response = createCardImageResponse(new Uint8Array([137, 80, 78, 71]));
+    const response = createCardImageResponse(new Uint8Array([137, 80, 78, 71]), "image/png", {
+      etag: '"card-hash"',
+      lastModified: new Date("2026-09-10T10:00:00.000Z"),
+    });
 
     expect(response.headers.get("content-type")).toBe("image/png");
     expect(response.headers.get("cache-control")).toBe(CARD_CACHE_CONTROL);
+    expect(response.headers.get("etag")).toBe('"card-hash"');
+    expect(response.headers.get("last-modified")).toBe("Thu, 10 Sep 2026 10:00:00 GMT");
     expect(Array.from(new Uint8Array(await response.arrayBuffer()))).toEqual([137, 80, 78, 71]);
+  });
+
+  it("returns 304 for matching strong or weak ETags", async () => {
+    expect(etagMatches('W/"card-hash"', '"card-hash"')).toBe(true);
+    expect(etagMatches('"another", W/"card-hash"', '"card-hash"')).toBe(true);
+    expect(etagMatches('"another"', '"card-hash"')).toBe(false);
+
+    const response = createCardImageResponse(new Uint8Array([137, 80, 78, 71]), "image/png", {
+      etag: '"card-hash"',
+      ifNoneMatch: 'W/"card-hash"',
+    });
+    expect(response.status).toBe(304);
+    expect(await response.text()).toBe("");
   });
 
   it("returns a non-cacheable image error", async () => {

@@ -31,11 +31,25 @@ Use the same URL pattern for any user and either `hero.png` or `report.png`.
 ## How it works
 
 1. The route validates the requested public handle and card style.
-2. A Vercel Node function opens the official public profile in headless Chromium.
-3. It chooses the native Landscape, Hero, or Report card and captures the PNG emitted by WhoBurnedMore's own **download** action.
-4. Vercel caches each result for 15 minutes, with one hour of stale-while-revalidate coverage.
+2. Next's Data Cache checks for a completed PNG, then TiDB resolves its persistent Vercel Blob pointer on a miss.
+3. Stale cards return immediately while the public profile fingerprint is checked in the background.
+4. Headless Chromium captures a new official PNG when visible profile data or the renderer version changes, with a conservative timed retry if fingerprint extraction fails.
+5. The new image is validated and uploaded before TiDB atomically replaces the old pointer.
 
-The official renderer remains in charge of the card's typography, colors, dimensions, charts, profile avatar, and whichever tools appear for that profile.
+The official renderer remains in charge of the card's typography, colors, dimensions, charts, profile avatar, and however many tools appear for that profile. Transient failures keep the last valid PNG available.
+
+## Prepare and status APIs
+
+The playground calls the preparation API before exposing a README URL:
+
+```http
+POST /api/card/prepare
+Content-Type: application/json
+
+{ "handle": "utkarsh-wadalkar", "style": "landscape" }
+```
+
+Public aggregate telemetry is available at [`/status`](https://whoburnedmore-card.vercel.app/status) and [`/api/status`](https://whoburnedmore-card.vercel.app/api/status). Metrics cover origin-side application activity, not requests served invisibly by GitHub Camo or Vercel's CDN.
 
 ## Local development
 
@@ -54,6 +68,14 @@ pnpm dev
 
 Then open `http://localhost:3000/api/card/utkarsh-wadalkar/landscape.png`.
 
+Persistence is optional locally. To enable it, create a public Vercel Blob store and provide `BLOB_READ_WRITE_TOKEN` plus either `DATABASE_URL` or the `TIDB_HOST`, `TIDB_PORT`, `TIDB_USER`, `TIDB_PASSWORD`, and `TIDB_DATABASE` variables created by Vercel's TiDB integration. Select a dedicated application database such as `whoburnedmore_card`; system schemas including `sys` are deliberately refused. Then apply the TiDB schema:
+
+```bash
+pnpm db:migrate
+```
+
+The migration is explicit and is never run during `next build`.
+
 ## Deploy to Vercel
 
 ```bash
@@ -64,9 +86,9 @@ pnpm build
 vercel --prod
 ```
 
-At runtime, `@sparticuz/chromium-min` downloads the official Sparticuz Chromium archive and caches the extracted browser within a warm function. Set `CHROMIUM_PACK_URL` to an HTTPS URL if you prefer to host a compatible archive yourself.
+At runtime, the deployment bundles `@sparticuz/chromium`, so it does not depend on downloading a browser archive while serving a README image. Completed PNGs are also held in Next's shared Data Cache for 15 minutes, allowing GitHub's short-lived image proxy to receive cached cards promptly.
 
-The first uncached request starts Chromium, so Vercel's Hobby timeout may be too short for reliable cold renders. Use a plan with a longer function duration for production traffic.
+Configure Vercel Blob and either TiDB connection format in Vercel, then run `pnpm db:migrate` against the intended TiDB branch before enabling production persistence. Without both TiDB and Blob credentials the existing Next-cache renderer remains available and `/status` reports degraded persistence.
 
 ## Validation
 
@@ -76,4 +98,4 @@ pnpm test
 pnpm build
 ```
 
-The tests cover arbitrary handle validation, each style URL, cache and content headers, and image-formatted error responses. A deployed smoke test is simply opening one of the three endpoint URLs for a public profile.
+The tests cover arbitrary handles, each style URL, dynamic tool extraction, canonical fingerprints, renderer invalidation, lock and cleanup policy, ETags, status calculations, cache headers, and image-formatted errors. A deployed smoke test is simply opening one of the three endpoint URLs for a public profile.

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
 const styles = [
   { id: "landscape", label: "Landscape" },
@@ -18,26 +18,100 @@ export function CardPlayground({ baseUrl, initialHandle }: { baseUrl: string; in
   const [handleInput, setHandleInput] = useState(initialHandle);
   const [submittedHandle, setSubmittedHandle] = useState(initialHandle);
   const [style, setStyle] = useState<CardStyle>("landscape");
-  const [imageState, setImageState] = useState<"loading" | "ready" | "error">("loading");
+  const [prepareKey, setPrepareKey] = useState(0);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [imageState, setImageState] = useState<"preparing" | "loading" | "ready" | "error">("preparing");
   const [copyState, setCopyState] = useState<"idle" | "copied" | "unavailable">("idle");
 
   const handle = normalizeHandle(submittedHandle) || initialHandle;
   const imageUrl = useMemo(() => `${baseUrl}/api/card/${handle}/${style}.png`, [baseUrl, handle, style]);
+  const canCopy = imageState === "ready";
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let objectUrl: string | null = null;
+
+    async function prepare() {
+      setPreviewImageUrl(null);
+      setImageState("preparing");
+      setCopyState("idle");
+
+      try {
+        for (let attempt = 0; attempt < 30; attempt += 1) {
+          const response = await fetch("/api/card/prepare", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ handle, style }),
+            cache: "no-store",
+            signal: controller.signal,
+          });
+          const payload = (await response.json()) as {
+            status?: string;
+            imageUrl?: string;
+            retryAfter?: number;
+            error?: string;
+          };
+
+          if (response.status === 202 && payload.status === "preparing") {
+            await wait(Math.max(1, payload.retryAfter ?? 2) * 1000, controller.signal);
+            continue;
+          }
+          if (!response.ok || payload.status !== "ready" || !payload.imageUrl) {
+            throw new Error(payload.error || "The card could not be prepared.");
+          }
+
+          const imageResponse = await fetch(`${payload.imageUrl}?preview=${Date.now()}`, {
+            cache: "no-store",
+            signal: controller.signal,
+          });
+          const bytes = new Uint8Array(await imageResponse.arrayBuffer());
+          if (
+            !imageResponse.ok ||
+            imageResponse.headers.get("content-type")?.split(";", 1)[0] !== "image/png" ||
+            !hasPngSignature(bytes)
+          ) {
+            throw new Error("The durable card URL did not return a valid PNG.");
+          }
+
+          objectUrl = URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
+          setPreviewImageUrl(objectUrl);
+          setImageState("loading");
+          return;
+        }
+        throw new Error("The card is still being prepared.");
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          console.error("Card preparation failed", error);
+          setImageState("error");
+        }
+      }
+    }
+
+    void prepare();
+    return () => {
+      controller.abort();
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [handle, style, prepareKey]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmittedHandle(normalizeHandle(handleInput) || initialHandle);
-    setImageState("loading");
+    setPrepareKey((value) => value + 1);
+    setImageState("preparing");
     setCopyState("idle");
   }
 
   function selectStyle(nextStyle: CardStyle) {
     setStyle(nextStyle);
-    setImageState("loading");
+    setPrepareKey((value) => value + 1);
+    setImageState("preparing");
     setCopyState("idle");
   }
 
   async function copyUrl() {
+    if (!canCopy) return;
+
     try {
       await navigator.clipboard.writeText(imageUrl);
       setCopyState("copied");
@@ -83,25 +157,27 @@ export function CardPlayground({ baseUrl, initialHandle }: { baseUrl: string; in
         </div>
 
         <div className={`card-stage card-stage-${style}`}>
-          {imageState === "loading" ? (
+          {imageState === "preparing" || imageState === "loading" ? (
             <>
               <span className="image-skeleton" />
               <p className="preview-loading" role="status">
-                Opening the official share flow…
+                {imageState === "preparing" ? "Preparing a durable card…" : "Verifying the live PNG…"}
               </p>
             </>
           ) : null}
-          <img
-            alt={`Official WhoBurnedMore ${style} card for ${handle}`}
-            className={imageState === "ready" ? "is-ready" : undefined}
-            height={630}
-            key={imageUrl}
-            loading="lazy"
-            onError={() => setImageState("error")}
-            onLoad={() => setImageState("ready")}
-            src={imageUrl}
-            width={1200}
-          />
+          {previewImageUrl ? (
+            <img
+              alt={`Official WhoBurnedMore ${style} card for ${handle}`}
+              className={imageState === "ready" ? "is-ready" : undefined}
+              height={630}
+              key={previewImageUrl}
+              loading="eager"
+              onError={() => setImageState("error")}
+              onLoad={() => setImageState("ready")}
+              src={previewImageUrl}
+              width={1200}
+            />
+          ) : null}
           {imageState === "error" ? (
             <p className="preview-error" role="status">
               This profile could not return a card. Check that the handle is public and try again.
@@ -111,14 +187,46 @@ export function CardPlayground({ baseUrl, initialHandle }: { baseUrl: string; in
 
         <div className="url-output">
           <code>{imageUrl}</code>
-          <button onClick={copyUrl} type="button">
-            {copyState === "copied" ? "Copied" : "Copy URL"}
+          <button disabled={!canCopy} onClick={copyUrl} type="button">
+            {copyState === "copied" ? "Copied" : canCopy ? "Copy URL" : "Preparing…"}
           </button>
         </div>
         <p aria-live="polite" className="copy-status">
-          {copyState === "unavailable" ? "Clipboard access is unavailable. Select the URL to copy it." : ""}
+          {copyState === "unavailable"
+            ? "Clipboard access is unavailable. Select the URL to copy it."
+            : imageState === "preparing" || imageState === "loading"
+              ? "The URL unlocks after the durable image is prepared and verified."
+              : ""}
         </p>
       </div>
     </div>
+  );
+}
+
+function wait(milliseconds: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      window.clearTimeout(timeout);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    const timeout = window.setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, milliseconds);
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+function hasPngSignature(bytes: Uint8Array): boolean {
+  return (
+    bytes.byteLength >= 8 &&
+    bytes[0] === 137 &&
+    bytes[1] === 80 &&
+    bytes[2] === 78 &&
+    bytes[3] === 71 &&
+    bytes[4] === 13 &&
+    bytes[5] === 10 &&
+    bytes[6] === 26 &&
+    bytes[7] === 10
   );
 }

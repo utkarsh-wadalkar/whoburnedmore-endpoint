@@ -1,6 +1,11 @@
+import { after } from "next/server";
+
 import { createCardErrorResponse, createCardImageResponse } from "../../../../../lib/card-response";
 import { parseCardStyle, validateHandle } from "../../../../../lib/card";
-import { CardRenderError, renderOfficialCard } from "../../../../../lib/render-official-card";
+import { isPersistentCacheConfigured } from "../../../../../lib/cache-config";
+import { refreshCardInBackground, resolveCardDelivery } from "../../../../../lib/card-service";
+import { recordOriginRequest, touchCardRequested } from "../../../../../lib/persistent-card-store";
+import { CardRenderError } from "../../../../../lib/render-official-card";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,7 +18,8 @@ type RouteContext = {
   }>;
 };
 
-export async function GET(_request: Request, context: RouteContext): Promise<Response> {
+export async function GET(request: Request, context: RouteContext): Promise<Response> {
+  const startedAt = performance.now();
   const { handle: rawHandle, style: rawStyle } = await context.params;
   const handle = validateHandle(rawHandle);
   const style = parseCardStyle(rawStyle);
@@ -26,8 +32,21 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
   }
 
   try {
-    const card = await renderOfficialCard(handle, style);
-    return createCardImageResponse(card.bytes, card.contentType);
+    const card = await resolveCardDelivery(handle, style);
+    if (card.persistent && isPersistentCacheConfigured()) {
+      after(async () => {
+        await Promise.allSettled([
+          recordOriginRequest(performance.now() - startedAt),
+          touchCardRequested(handle, style),
+          ...(card.needsRefresh ? [refreshCardInBackground(handle, style)] : []),
+        ]);
+      });
+    }
+    return createCardImageResponse(card.bytes, card.contentType, {
+      etag: card.etag,
+      ifNoneMatch: request.headers.get("if-none-match"),
+      lastModified: card.renderedAt,
+    });
   } catch (error) {
     console.error("WhoBurnedMore card render failed", {
       handle,
@@ -39,7 +58,14 @@ export async function GET(_request: Request, context: RouteContext): Promise<Res
       return createCardErrorResponse("This WhoBurnedMore profile is missing or private.", 404);
     }
 
-    return createCardErrorResponse("WhoBurnedMore could not render this card. Try again shortly.", 502);
+    const preparing = error instanceof CardRenderError && /being prepared/i.test(error.message);
+    return createCardErrorResponse(
+      preparing
+        ? "This WhoBurnedMore card is being prepared. Try again shortly."
+        : "WhoBurnedMore could not render this card. Try again shortly.",
+      preparing ? 503 : 502,
+      preparing ? { "retry-after": "2" } : undefined,
+    );
   }
 }
 

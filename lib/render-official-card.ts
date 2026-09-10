@@ -1,4 +1,5 @@
-import chromium from "@sparticuz/chromium-min";
+import chromium from "@sparticuz/chromium";
+import { unstable_cache } from "next/cache";
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
 
 import { profileUrl, type CardStyle } from "./card";
@@ -7,8 +8,7 @@ const CARD_DOWNLOAD_KEY = "__whoburnedmoreCardDownload";
 const MAX_CARD_BYTES = 12 * 1024 * 1024;
 const PAGE_TIMEOUT_MS = 30_000;
 const CARD_TIMEOUT_MS = 20_000;
-const DEFAULT_CHROMIUM_PACK_URL =
-  "https://github.com/Sparticuz/chromium/releases/download/v152.0.0/chromium-v152.0.0-pack.x64.tar";
+const CARD_ASSET_TIMEOUT_MS = 5_000;
 
 const ALLOWED_HOSTS = new Set([
   "whoburnedmore.com",
@@ -20,7 +20,12 @@ const ALLOWED_HOSTS = new Set([
   "api.producthunt.com",
 ]);
 
-let browserPromise: Promise<Browser> | undefined;
+type BrowserSlot = {
+  browser?: Browser;
+  promise: Promise<Browser>;
+};
+
+let browserSlot: BrowserSlot | undefined;
 
 export class CardRenderError extends Error {
   constructor(
@@ -38,67 +43,149 @@ export type RenderedCard = {
   contentType: "image/png";
 };
 
+type CachedCard = {
+  bytes: string;
+  contentType: "image/png";
+};
+
+const renderCachedOfficialCard = unstable_cache(
+  async (handle: string, style: CardStyle): Promise<CachedCard> => {
+    const card = await renderOfficialCard(handle, style);
+    return {
+      bytes: Buffer.from(card.bytes).toString("base64"),
+      contentType: card.contentType,
+    };
+  },
+  ["official-share-card"],
+  { revalidate: 900 },
+);
+
+export async function renderCachedOfficialCardImage(
+  handle: string,
+  style: CardStyle,
+): Promise<RenderedCard> {
+  const card = await renderCachedOfficialCard(handle, style);
+  return {
+    bytes: new Uint8Array(Buffer.from(card.bytes, "base64")),
+    contentType: card.contentType,
+  };
+}
+
 export async function renderOfficialCard(handle: string, style: CardStyle): Promise<RenderedCard> {
-  const browser = await getBrowser();
-  const page = await browser.newPage();
-
   try {
-    await configurePage(page);
-    const response = await page.goto(profileUrl(handle), {
-      waitUntil: "domcontentloaded",
-      timeout: PAGE_TIMEOUT_MS,
+    return await withRenderPage(async (page) => {
+      await configurePage(page);
+      const response = await page.goto(profileUrl(handle), {
+        waitUntil: "domcontentloaded",
+        timeout: PAGE_TIMEOUT_MS,
+      });
+
+      if (response?.status() === 404) {
+        throw new CardRenderError("not-found", "The public profile was not found.");
+      }
+
+      if (!response || response.status() >= 500) {
+        throw new CardRenderError("unavailable", "The upstream profile could not be loaded.");
+      }
+
+      await waitForShareCard(page);
+      await waitForCardAssets(page);
+      await openShareDialog(page);
+      await selectStyle(page, style);
+      await installDownloadCapture(page);
+      await clickDialogButton(page, "download");
+
+      const dataUrl = await page.waitForFunction(
+        (key) => {
+          const value = (window as unknown as Window & Record<string, unknown>)[key];
+          return typeof value === "string" && value.startsWith("data:image/") ? value : false;
+        },
+        { timeout: CARD_TIMEOUT_MS },
+        CARD_DOWNLOAD_KEY,
+      );
+
+      const value = await dataUrl.jsonValue();
+      if (typeof value !== "string") {
+        throw new CardRenderError("unavailable", "The official image download did not complete.");
+      }
+
+      return decodePngDataUrl(value);
     });
-
-    if (response?.status() === 404) {
-      throw new CardRenderError("not-found", "The public profile was not found.");
-    }
-
-    if (!response || response.status() >= 500) {
-      throw new CardRenderError("unavailable", "The upstream profile could not be loaded.");
-    }
-
-    await waitForShareCard(page);
-    await waitForCardAssets(page);
-    await openShareDialog(page);
-    await selectStyle(page, style);
-    await installDownloadCapture(page);
-    await clickDialogButton(page, "download");
-
-    const dataUrl = await page.waitForFunction(
-      (key) => {
-        const value = (window as unknown as Window & Record<string, unknown>)[key];
-        return typeof value === "string" && value.startsWith("data:image/") ? value : false;
-      },
-      { timeout: CARD_TIMEOUT_MS },
-      CARD_DOWNLOAD_KEY,
-    );
-
-    const value = await dataUrl.jsonValue();
-    if (typeof value !== "string") {
-      throw new CardRenderError("unavailable", "The official image download did not complete.");
-    }
-
-    return decodePngDataUrl(value);
   } catch (error) {
     if (error instanceof CardRenderError) throw error;
 
     throw new CardRenderError("unavailable", "The official card renderer did not complete.", {
       cause: error,
     });
-  } finally {
-    await page.close().catch(() => undefined);
   }
 }
 
-async function getBrowser(): Promise<Browser> {
-  if (!browserPromise) {
-    browserPromise = launchBrowser();
-    browserPromise.catch(() => {
-      browserPromise = undefined;
-    });
+async function withRenderPage<T>(work: (page: Page) => Promise<T>): Promise<T> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const lease = await getBrowser();
+    let page: Page | undefined;
+
+    try {
+      page = await lease.browser.newPage();
+      return await work(page);
+    } catch (error) {
+      if (attempt === 0 && shouldRetryBrowserWork(lease.browser, error)) {
+        invalidateBrowserSlot(lease.slot);
+        await lease.browser.close().catch(() => undefined);
+        continue;
+      }
+      throw error;
+    } finally {
+      await page?.close().catch(() => undefined);
+    }
   }
 
-  return browserPromise;
+  throw new CardRenderError("unavailable", "The browser could not create a share-card page.");
+}
+
+async function getBrowser(): Promise<{ browser: Browser; slot: BrowserSlot }> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const slot = browserSlot ?? startBrowser();
+    const browser = await slot.promise;
+
+    if (browser.connected) return { browser, slot };
+
+    invalidateBrowserSlot(slot);
+  }
+
+  throw new CardRenderError("unavailable", "The browser disconnected before it could render a card.");
+}
+
+function startBrowser(): BrowserSlot {
+  const slot = {} as BrowserSlot;
+  slot.promise = launchBrowser()
+    .then((browser) => {
+      slot.browser = browser;
+      browser.once("disconnected", () => {
+        invalidateBrowserSlot(slot);
+      });
+      return browser;
+    })
+    .catch((error: unknown) => {
+      invalidateBrowserSlot(slot);
+      throw error;
+    });
+
+  browserSlot = slot;
+  return slot;
+}
+
+function invalidateBrowserSlot(slot: BrowserSlot): void {
+  if (browserSlot === slot) browserSlot = undefined;
+}
+
+function shouldRetryBrowserWork(browser: Browser, error: unknown): boolean {
+  if (!browser.connected) return true;
+  if (!(error instanceof Error)) return false;
+
+  return /Target closed|Session closed|Protocol error|Connection closed|Most likely the page has been closed/i.test(
+    error.message,
+  );
 }
 
 async function launchBrowser(): Promise<Browser> {
@@ -112,7 +199,7 @@ async function launchBrowser(): Promise<Browser> {
     );
   }
 
-  const executablePath = localExecutable ?? (await chromium.executablePath(getChromiumPackUrl()));
+  const executablePath = localExecutable ?? (await chromium.executablePath());
   const headless = localExecutable ? true : "shell";
   const args = localExecutable
     ? ["--no-sandbox", "--disable-setuid-sandbox"]
@@ -131,19 +218,6 @@ async function launchBrowser(): Promise<Browser> {
     executablePath,
     headless,
   });
-}
-
-function getChromiumPackUrl(): string {
-  const configured = process.env.CHROMIUM_PACK_URL;
-  if (configured) {
-    const parsed = new URL(configured);
-    if (parsed.protocol !== "https:") {
-      throw new CardRenderError("unavailable", "CHROMIUM_PACK_URL must use HTTPS.");
-    }
-    return parsed.toString();
-  }
-
-  return DEFAULT_CHROMIUM_PACK_URL;
 }
 
 async function configurePage(page: Page): Promise<void> {
@@ -197,18 +271,20 @@ async function waitForShareCard(page: Page): Promise<void> {
 }
 
 async function waitForCardAssets(page: Page): Promise<void> {
-  await page.evaluate(async () => {
-    await document.fonts.ready;
-    await Promise.all(
-      Array.from(document.images).map((image) => {
+  await page.evaluate(async (timeout) => {
+    const assets = Promise.all([
+      document.fonts.ready,
+      ...Array.from(document.images).map((image) => {
         if (image.complete) return Promise.resolve();
         return new Promise<void>((resolve) => {
           image.addEventListener("load", () => resolve(), { once: true });
           image.addEventListener("error", () => resolve(), { once: true });
         });
       }),
-    );
-  });
+    ]);
+
+    await Promise.race([assets, new Promise<void>((resolve) => window.setTimeout(resolve, timeout))]);
+  }, CARD_ASSET_TIMEOUT_MS);
 }
 
 async function openShareDialog(page: Page): Promise<void> {

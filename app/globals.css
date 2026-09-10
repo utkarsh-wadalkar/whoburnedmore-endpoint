@@ -139,6 +139,11 @@ input:focus-visible {
   text-decoration-color: currentColor;
 }
 
+.site-nav a[aria-current="page"] {
+  color: var(--ink);
+  text-decoration-color: var(--ember);
+}
+
 .hero {
   display: grid;
   min-height: min(46rem, calc(100dvh - 4.75rem));
@@ -482,6 +487,11 @@ h2 {
   transform: scale(0.97);
 }
 
+.url-output button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
 .handle-form > p,
 .copy-status {
   min-height: 1.2rem;
@@ -686,6 +696,307 @@ h2 {
 
 .site-footer > a:last-child {
   justify-self: end;
+}
+
+.status-page {
+  padding-block: clamp(2rem, 5vw, 5rem) clamp(7rem, 12vw, 12rem);
+}
+
+.status-hero {
+  display: grid;
+  min-height: 35rem;
+  padding-bottom: clamp(5rem, 9vw, 8rem);
+  grid-template-columns: minmax(0, 1.08fr) minmax(21rem, 0.72fr);
+  gap: clamp(3rem, 8vw, 9rem);
+  align-items: center;
+}
+
+.status-hero h1 {
+  max-width: 11ch;
+  font-size: clamp(3.8rem, 7.8vw, 7.7rem);
+}
+
+.status-signal {
+  position: relative;
+  display: flex;
+  min-height: 14rem;
+  padding: clamp(1.6rem, 4vw, 2.5rem);
+  overflow: hidden;
+  align-items: flex-end;
+  gap: 1rem;
+  border-radius: 1.65rem;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(255, 109, 0, 0.22), transparent 11rem),
+    rgba(255, 255, 255, 0.035);
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    0 2rem 6rem rgba(0, 0, 0, 0.22);
+}
+
+.status-signal::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: linear-gradient(120deg, transparent 25%, rgba(255, 255, 255, 0.035), transparent 75%);
+}
+
+.status-pulse {
+  position: relative;
+  width: 0.72rem;
+  height: 0.72rem;
+  flex: 0 0 auto;
+  margin-bottom: 0.45rem;
+  border-radius: 50%;
+  background: #53dc95;
+  box-shadow: 0 0 0 0.45rem rgba(83, 220, 149, 0.1), 0 0 2.4rem rgba(83, 220, 149, 0.65);
+}
+
+.status-signal-degraded .status-pulse,
+.status-signal-maintenance .status-pulse {
+  background: var(--ember);
+  box-shadow: 0 0 0 0.45rem rgba(255, 109, 0, 0.1), 0 0 2.4rem rgba(255, 109, 0, 0.65);
+}
+
+.status-signal p {
+  margin: 0 0 0.45rem;
+  color: var(--ink);
+  font-size: clamp(1.25rem, 2.3vw, 1.8rem);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+}
+
+.status-signal div > span {
+  display: block;
+  max-width: 26rem;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.status-announcement {
+  margin-bottom: 3rem;
+  padding: 1rem 1.2rem;
+  border-radius: 0.9rem;
+  background: rgba(255, 109, 0, 0.08);
+  color: var(--ember-soft);
+  box-shadow: inset 0 0 0 1px var(--ember-line);
+  font-family: "Cascadia Mono", "SFMono-Regular", ui-monospace, monospace;
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.status-section {
+  display: grid;
+  padding-block: clamp(5rem, 10vw, 9rem);
+  border-top: 1px solid var(--line);
+  grid-template-columns: minmax(15rem, 0.72fr) minmax(0, 1.28fr);
+  gap: clamp(3rem, 9vw, 10rem);
+  align-items: start;
+}
+
+.status-section-heading {
+  position: sticky;
+  top: 2rem;
+}
+
+.status-section-heading h2 {
+  max-width: 9ch;
+  font-size: clamp(2.8rem, 5.6vw, 5.6rem);
+  line-height: 0.94;
+}
+
+.status-section-heading > p:last-child {
+  max-width: 27rem;
+  margin: 1.6rem 0 0;
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.7;
+}
+
+.status-stat-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.status-metric {
+  display: flex;
+  min-width: 0;
+  min-height: 9rem;
+  padding: 1.35rem;
+  flex-direction: column;
+  justify-content: space-between;
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.status-metric > span {
+  color: var(--dim);
+  font-family: "Cascadia Mono", "SFMono-Regular", ui-monospace, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.status-metric > strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-family: "Cascadia Mono", "SFMono-Regular", ui-monospace, monospace;
+  font-size: clamp(1.8rem, 4vw, 3.6rem);
+  font-weight: 680;
+  letter-spacing: -0.08em;
+  text-overflow: ellipsis;
+}
+
+.status-metric > strong.is-accent {
+  color: var(--ember);
+}
+
+.status-activity-panel {
+  padding: clamp(1.2rem, 3vw, 2rem);
+  border-radius: 1.5rem;
+  background: #101113;
+  box-shadow:
+    inset 0 0 0 1px var(--line),
+    0 2rem 6rem rgba(0, 0, 0, 0.18);
+}
+
+.status-activity-summary {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.status-activity-summary .status-metric {
+  min-height: 7.5rem;
+  padding: 1rem;
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.status-activity-summary .status-metric > strong {
+  font-size: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.status-bars {
+  display: grid;
+  height: 15rem;
+  margin-top: 2.5rem;
+  gap: clamp(0.18rem, 0.5vw, 0.42rem);
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  align-items: end;
+  border-bottom: 1px solid var(--line);
+  background: repeating-linear-gradient(to top, transparent 0, transparent calc(25% - 1px), var(--line) 25%);
+}
+
+.status-bars > span {
+  min-height: 0.35rem;
+  border-radius: 0.28rem 0.28rem 0 0;
+  background: linear-gradient(to top, #b54d00, var(--ember));
+  opacity: 0.86;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.status-bars > span:hover {
+  opacity: 1;
+  transform: scaleX(1.16);
+}
+
+.status-axis {
+  display: flex;
+  margin-top: 0.7rem;
+  justify-content: space-between;
+  color: var(--dim);
+  font-family: "Cascadia Mono", "SFMono-Regular", ui-monospace, monospace;
+  font-size: 0.63rem;
+}
+
+.status-render-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.9fr);
+}
+
+.status-performance-card {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.status-performance-card .status-metric {
+  min-height: 8rem;
+}
+
+.status-performance-card .status-metric > strong {
+  font-size: clamp(1.45rem, 3vw, 2.5rem);
+}
+
+.status-style-card {
+  display: grid;
+  padding: 1.4rem;
+  gap: 1.5rem;
+  align-content: center;
+  border-radius: 1.15rem;
+  background: rgba(255, 255, 255, 0.035);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.status-style-row > div {
+  display: flex;
+  margin-bottom: 0.7rem;
+  justify-content: space-between;
+  color: var(--muted);
+  font-family: "Cascadia Mono", "SFMono-Regular", ui-monospace, monospace;
+  font-size: 0.78rem;
+}
+
+.status-style-row strong {
+  color: var(--ink);
+}
+
+.status-style-track {
+  display: block;
+  height: 0.48rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.status-style-track > span {
+  display: block;
+  height: 100%;
+  min-width: 0.2rem;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--ember), var(--ember-soft));
+}
+
+.status-footnote {
+  display: grid;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2rem;
+}
+
+.status-footnote div {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.status-footnote span {
+  color: var(--dim);
+  font-family: "Cascadia Mono", "SFMono-Regular", ui-monospace, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.status-footnote strong {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 520;
 }
 
 .docs-page {
@@ -913,6 +1224,18 @@ h2 {
   .integration {
     gap: 3.5rem;
   }
+
+  .status-section {
+    gap: 3.5rem;
+  }
+
+  .status-activity-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .status-render-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 767px) {
@@ -1028,6 +1351,32 @@ h2 {
     padding-top: 3.5rem;
   }
 
+  .status-page {
+    padding-top: 3.5rem;
+  }
+
+  .status-hero,
+  .status-section {
+    grid-template-columns: 1fr;
+  }
+
+  .status-hero {
+    min-height: 0;
+    padding-block: 3rem 6rem;
+  }
+
+  .status-section-heading {
+    position: static;
+  }
+
+  .status-section-heading h2 {
+    max-width: 11ch;
+  }
+
+  .status-footnote {
+    grid-template-columns: 1fr;
+  }
+
   .docs-hero {
     min-height: 0;
     padding-bottom: 5rem;
@@ -1086,6 +1435,24 @@ h2 {
 
   .url-output button {
     width: 100%;
+  }
+
+  .status-stat-grid,
+  .status-performance-card,
+  .status-activity-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .status-metric {
+    min-height: 7.5rem;
+  }
+
+  .status-signal {
+    min-height: 12rem;
+  }
+
+  .status-bars {
+    gap: 0.12rem;
   }
 }
 
