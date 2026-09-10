@@ -86,7 +86,7 @@ export default function DocsPage() {
               <CodeBlock label="README markup">{`<p align="center">
  <a href="https://whoburnedmore.com/u/PROFILE-USERNAME">
   <img
-    src="YOUR-URL"
+    src="${productionUrl}/api/card/PROFILE-USERNAME/landscape.png"
   />
 </a>
 </p>`}</CodeBlock>

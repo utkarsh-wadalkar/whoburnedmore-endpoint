@@ -16,6 +16,12 @@ describe("public production URLs", () => {
     expect(docs).toContain(
       "https://wbm-card.vercel.app/api/card/PROFILE-USERNAME/landscape.png",
     );
+    expect(homepage).toContain(
+      "src=&quot;https://wbm-card.vercel.app/api/card/PROFILE-USERNAME/landscape.png&quot;",
+    );
+    expect(docs).toContain(
+      "src=&quot;https://wbm-card.vercel.app/api/card/PROFILE-USERNAME/landscape.png&quot;",
+    );
     expect(`${homepage}${docs}`).not.toContain("whoburnedmore-card.vercel.app");
   });
 });

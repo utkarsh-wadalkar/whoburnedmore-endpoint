@@ -162,7 +162,7 @@ export default function Home() {
             <pre aria-label="README markup example">
               <code>{`<a href="https://whoburnedmore.com/u/PROFILE-USERNAME">
   <img
-    src="YOUR-URL"
+    src="${productionUrl}/api/card/PROFILE-USERNAME/landscape.png"
   />
 </a>`}</code>
             </pre>
