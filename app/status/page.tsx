@@ -24,6 +24,8 @@ const stateCopy: Record<ServiceState, { label: string; detail: string }> = {
   },
 };
 
+const activityAxisTickIndexes = [0, 6, 12, 18, 23] as const;
+
 export default async function StatusPage() {
   const status = await getPublicServiceStatus();
   const copy = stateCopy[status.status];
@@ -97,7 +99,7 @@ export default async function StatusPage() {
               <Metric label="Users" value={formatNumber(status.last24Hours.newProfiles)} />
             </div>
             <div
-              aria-label="Hourly origin requests for the last 24 hours"
+              aria-label="Hourly origin requests for the last 24 hours in Indian Standard Time"
               className="status-bars"
               role="img"
             >
@@ -105,13 +107,20 @@ export default async function StatusPage() {
                 <span
                   key={bucket.hour}
                   style={{ height: `${Math.max(5, (bucket.originRequests / maxActivity) * 100)}%` }}
-                  title={`${formatHour(bucket.hour)}: ${bucket.originRequests} origin requests`}
+                  title={`${formatIstHour(bucket.hour, true)}: ${bucket.originRequests} origin requests`}
                 />
               ))}
             </div>
+            <div className="status-chart-timezone">
+              <span>Hourly requests</span>
+              <span>IST · UTC+5:30</span>
+            </div>
             <div className="status-axis">
-              <span>{formatHour(status.activity[0]?.hour)}</span>
-              <span>now</span>
+              {activityAxisTickIndexes.map((index) => (
+                <span key={index} style={{ gridColumn: index + 1 }}>
+                  {formatIstHour(status.activity[index]?.hour)}
+                </span>
+              ))}
             </div>
           </div>
         </section>
@@ -217,7 +226,13 @@ function formatTimestamp(value: string | null): string {
   }).format(new Date(value));
 }
 
-function formatHour(value: string | undefined): string {
+function formatIstHour(value: string | undefined, includeZone = false): string {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("en", { hour: "numeric", timeZone: "UTC" }).format(new Date(value));
+  const time = new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Kolkata",
+  }).format(new Date(value));
+  return includeZone ? `${time} IST` : time;
 }

@@ -904,13 +904,37 @@ h2 {
   transform: scaleX(1.16);
 }
 
-.status-axis {
+.status-chart-timezone {
   display: flex;
   margin-top: 0.7rem;
   justify-content: space-between;
+  color: var(--muted);
+  font-family: "Cascadia Mono", "SFMono-Regular", ui-monospace, monospace;
+  font-size: 0.63rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.status-axis {
+  display: grid;
+  margin-top: 0.45rem;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
   color: var(--dim);
   font-family: "Cascadia Mono", "SFMono-Regular", ui-monospace, monospace;
   font-size: 0.63rem;
+}
+
+.status-axis > span {
+  justify-self: center;
+  white-space: nowrap;
+}
+
+.status-axis > span:first-child {
+  justify-self: start;
+}
+
+.status-axis > span:last-child {
+  justify-self: end;
 }
 
 .status-render-grid {
