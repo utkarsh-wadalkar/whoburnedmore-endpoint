@@ -37,7 +37,7 @@ export default async function StatusPage() {
       </a>
       <header className="site-header">
         <a aria-label="WhoBurnedMore Cards home" className="wordmark" href="/">
-          <span className="wordmark-mark">wbm-</span>
+          <span className="wordmark-mark">wbm -</span>
           <span>cards</span>
         </a>
         <nav aria-label="Primary navigation" className="site-nav">
@@ -163,7 +163,7 @@ export default async function StatusPage() {
 
       <footer className="site-footer section-shell">
         <a className="wordmark" href="/">
-          <span className="wordmark-mark">wbm-</span>
+          <span className="wordmark-mark">wbm -</span>
           <span>cards</span>
         </a>
         <p>Public, aggregate, origin-side telemetry.</p>

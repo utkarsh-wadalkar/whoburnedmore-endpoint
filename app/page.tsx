@@ -46,7 +46,7 @@ export default function Home() {
       </a>
       <header className="site-header">
         <a aria-label="WhoBurnedMore-Cards home" className="wordmark" href="#top">
-          <span className="wordmark-mark">wbm-</span>
+          <span className="wordmark-mark">wbm -</span>
           <span>cards</span>
         </a>
         <nav aria-label="Primary navigation" className="site-nav">
@@ -186,7 +186,7 @@ export default function Home() {
 
       <footer className="site-footer section-shell">
         <a className="wordmark" href="#top">
-          <span className="wordmark-mark">wbm-</span>
+          <span className="wordmark-mark">wbm -</span>
           <span>cards</span>
         </a>
         <p>Made for public WhoBurnedMore profiles only.</p>

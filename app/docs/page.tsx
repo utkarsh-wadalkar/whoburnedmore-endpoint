@@ -20,7 +20,7 @@ export default function DocsPage() {
       </a>
       <header className="site-header">
         <a aria-label="WhoBurnedMore Cards home" className="wordmark" href="/">
-          <span className="wordmark-mark">wbm</span>
+          <span className="wordmark-mark">wbm -</span>
           <span>cards</span>
         </a>
         <nav aria-label="Primary navigation" className="site-nav">
@@ -141,7 +141,7 @@ Content-Type: application/json
 
       <footer className="site-footer section-shell">
         <a className="wordmark" href="/">
-          <span className="wordmark-mark">wbm</span>
+          <span className="wordmark-mark">wbm -</span>
           <span>cards</span>
         </a>
         <p>Made for public WhoBurnedMore profiles.</p>
