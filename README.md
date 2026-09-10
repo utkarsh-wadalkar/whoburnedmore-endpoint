@@ -8,9 +8,9 @@ Replace `YOUR-DEPLOYMENT` with the production Vercel URL and `HANDLE` with any p
 
 | Style | Endpoint |
 | --- | --- |
-| Landscape | `https://whoburnedmore-card.vercel.app/api/card/HANDLE/landscape.png` |
-| Hero | `https://whoburnedmore-card.vercel.app/api/card/HANDLE/hero.png` |
-| Report | `https://whoburnedmore-card.vercel.app/api/card/HANDLE/report.png` |
+| Landscape | `https://wbm-card.vercel.app/api/card/HANDLE/landscape.png` |
+| Hero | `https://wbm-card.vercel.app/api/card/HANDLE/hero.png` |
+| Report | `https://wbm-card.vercel.app/api/card/HANDLE/report.png` |
 
 For example, a profile README can use the Landscape card:
 
@@ -18,7 +18,7 @@ For example, a profile README can use the Landscape card:
 <p align="center">
   <a href="https://whoburnedmore.com/u/utkarsh-wadalkar">
     <img
-      src="https://whoburnedmore-card.vercel.app/api/card/utkarsh-wadalkar/landscape.png"
+      src="https://wbm-card.vercel.app/api/card/utkarsh-wadalkar/landscape.png"
       width="720"
       alt="Utkarsh's WhoBurnedMore usage"
     />
@@ -49,7 +49,7 @@ Content-Type: application/json
 { "handle": "utkarsh-wadalkar", "style": "landscape" }
 ```
 
-Public aggregate telemetry is available at [`/status`](https://whoburnedmore-card.vercel.app/status) and [`/api/status`](https://whoburnedmore-card.vercel.app/api/status). Metrics cover origin-side application activity, not requests served invisibly by GitHub Camo or Vercel's CDN.
+Public aggregate telemetry is available at [`/status`](https://wbm-card.vercel.app/status) and [`/api/status`](https://wbm-card.vercel.app/api/status). Metrics cover origin-side application activity, not requests served invisibly by GitHub Camo or Vercel's CDN.
 
 ## Local development
 

@@ -1,4 +1,4 @@
-const productionUrl = "https://whoburnedmore-card.vercel.app";
+const productionUrl = "https://wbm-card.vercel.app";
 const sampleHandle = "utkarsh-wadalkar";
 
 function CodeBlock({ children, label }: { children: string; label: string }) {

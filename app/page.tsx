@@ -1,6 +1,6 @@
 import { CardPlayground } from "../components/card-playground";
 
-const productionUrl = "https://whoburnedmore-card.vercel.app";
+const productionUrl = "https://wbm-card.vercel.app";
 const sampleHandle = "utkarsh-wadalkar";
 
 const cardStyles = [
