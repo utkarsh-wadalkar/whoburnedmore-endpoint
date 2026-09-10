@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: "Live operational and adoption metrics for the WhoBurnedMore card service.",
 };
 
-export const revalidate = 300;
+export const revalidate = 30;
 
 const stateCopy: Record<ServiceState, { label: string; detail: string }> = {
   operational: {
@@ -76,7 +76,7 @@ export default async function StatusPage() {
             <p>Aggregate activity only. No handles, profiles, or visitor identities are published.</p>
           </div>
           <div className="status-stat-grid">
-            <Metric label="Profiles seen" value={formatNumber(status.totals.uniqueProfiles)} />
+            <Metric label="Users" value={formatNumber(status.totals.uniqueProfiles)} />
             <Metric label="Live card variants" value={formatNumber(status.totals.currentCards)} />
             <Metric label="Cards generated" value={formatNumber(status.totals.cardsGenerated)} accent />
             <Metric label="Origin requests" value={formatNumber(status.totals.originRequests)} />
@@ -94,7 +94,7 @@ export default async function StatusPage() {
               <Metric label="Requests" value={formatNumber(status.last24Hours.originRequests)} />
               <Metric label="Prepared" value={formatNumber(status.last24Hours.prepares)} />
               <Metric label="Generated" value={formatNumber(status.last24Hours.cardsGenerated)} />
-              <Metric label="New profiles" value={formatNumber(status.last24Hours.newProfiles)} />
+              <Metric label="Users" value={formatNumber(status.last24Hours.newProfiles)} />
             </div>
             <div
               aria-label="Hourly origin requests for the last 24 hours"

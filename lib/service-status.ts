@@ -1,7 +1,6 @@
 import type { RowDataPacket } from "mysql2";
-import { unstable_cache } from "next/cache";
 
-import { RENDERER_VERSION, STATUS_CACHE_SECONDS, isDatabaseConfigured, isPersistentCacheConfigured } from "./cache-config";
+import { RENDERER_VERSION, isDatabaseConfigured, isPersistentCacheConfigured } from "./cache-config";
 import { execute } from "./db";
 
 export type ServiceState = "operational" | "degraded" | "maintenance";
@@ -81,14 +80,10 @@ type HourlyRow = RowDataPacket & {
   renders_failed: string | number;
 };
 
-const getCachedServiceStatus = unstable_cache(getServiceStatusUncached, ["public-service-status"], {
-  revalidate: STATUS_CACHE_SECONDS,
-});
-
 export async function getPublicServiceStatus(): Promise<PublicServiceStatus> {
   if (!isDatabaseConfigured()) return createUnconfiguredStatus();
   try {
-    return await getCachedServiceStatus();
+    return await getServiceStatusUncached();
   } catch (error) {
     console.error("Status metrics query failed", error);
     return createUnconfiguredStatus();

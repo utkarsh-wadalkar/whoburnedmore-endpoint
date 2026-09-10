@@ -2,7 +2,7 @@ export const CARD_REFRESH_SECONDS = 15 * 60;
 export const CARD_REFRESH_MS = CARD_REFRESH_SECONDS * 1000;
 export const CARD_ASSET_GRACE_SECONDS = 2 * 60 * 60;
 export const CARD_DATA_CACHE_SECONDS = 15 * 60;
-export const STATUS_CACHE_SECONDS = 5 * 60;
+export const STATUS_CACHE_SECONDS = 30;
 export const RENDERER_VERSION = 2;
 
 export type DatabaseSettings = {
