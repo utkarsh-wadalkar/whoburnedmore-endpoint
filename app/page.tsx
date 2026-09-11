@@ -3,6 +3,17 @@ import { CardPlayground } from "../components/card-playground";
 const productionUrl = "https://wbm-card.vercel.app";
 const sampleHandle = "utkarsh-wadalkar";
 
+function CodeBlock({ children, label }: { children: string; label: string }) {
+  return (
+    <div className="docs-code-shell">
+      <p>{label}</p>
+      <pre>
+        <code>{children}</code>
+      </pre>
+    </div>
+  );
+}
+
 const cardStyles = [
   {
     name: "Landscape",
@@ -159,14 +170,13 @@ export default function Home() {
           </div>
 
           <div className="code-bezel">
-            <pre aria-label="README markup example">
-<code>{`<a href="https://whoburnedmore.com/u/your-handle">
+<CodeBlock label="README markup example">{`<p align="center">
+ <a href="https://whoburnedmore.com/u/your-handle">
   <img
     src="${productionUrl}/api/card/your-handle/landscape.png"
   />
-</a>`}
-</code>
-            </pre>
+</a>
+</p>`}</CodeBlock>
           </div>
         </section>
 
