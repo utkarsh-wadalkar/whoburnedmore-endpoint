@@ -170,13 +170,11 @@ export default function Home() {
           </div>
 
           <div className="code-bezel">
-<CodeBlock label="README markup example">{`<p align="center">
- <a href="https://whoburnedmore.com/u/your-handle">
+<CodeBlock label="README markup example">{`<a href="https://whoburnedmore.com/u/your-handle">
   <img
     src="${productionUrl}/api/card/your-handle/landscape.png"
   />
-</a>
-</p>`}</CodeBlock>
+</a>`}</CodeBlock>
           </div>
         </section>
 

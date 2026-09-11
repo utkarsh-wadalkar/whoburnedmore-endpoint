@@ -97,7 +97,8 @@ export default function DocsPage() {
               <p>
                 Use the playground before copying a new URL. It calls the preparation API, persists the PNG, and verifies the stable endpoint before enabling copy. This keeps GitHub&apos;s first image request on the fast path.
               </p>
-              <CodeBlock label="Preparation API">{`POST ${productionUrl}/api/card/prepare
+              <CodeBlock label="Preparation API">
+{`POST ${productionUrl}/api/card/prepare
 Content-Type: application/json
 
 {
