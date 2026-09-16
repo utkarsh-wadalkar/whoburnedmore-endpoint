@@ -159,7 +159,7 @@ export default function Home() {
               for every README.
             </h2>
             <p>
-              GitHub requests the image. The endpoint opens the public share flow and returns the official PNG. Cached for 15 minutes.
+              GitHub requests the image. The endpoint returns the official PNG and refreshes the stable URL automatically as profile data changes.
             </p>
             <a className="text-link" href="https://whoburnedmore.com">
               Visit WhoBurnedMore
@@ -170,9 +170,10 @@ export default function Home() {
           </div>
 
           <div>
-<CodeBlock label="README markup example">{`<a href="https://whoburnedmore.com/u/your-handle">
+<CodeBlock label="Paste into your README">{`<a href="https://whoburnedmore.com/u/PROFILE-USERNAME">
   <img
-    src="${productionUrl}/api/card/your-handle/landscape.png"
+    src="${productionUrl}/api/card/PROFILE-USERNAME/landscape.png"
+    alt="PROFILE-USERNAME WhoBurnedMore stats"
   />
 </a>`}</CodeBlock>
           </div>

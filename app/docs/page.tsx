@@ -1,5 +1,6 @@
 const productionUrl = "https://wbm-card.vercel.app";
-const sampleHandle = "utkarsh-wadalkar";
+const exampleHandle = "PROFILE-USERNAME";
+const exampleProfileUrl = `https://whoburnedmore.com/u/${exampleHandle}`;
 
 function CodeBlock({ children, label }: { children: string; label: string }) {
   return (
@@ -51,8 +52,9 @@ export default function DocsPage() {
         <div className="docs-layout">
           <aside aria-label="On this page" className="docs-toc">
             <p>On this page</p>
+            <a href="#embed">Add to your portfolio</a>
             <a href="#endpoints">Endpoints</a>
-            <a href="#prepare">Prepare a card</a>
+            <a href="#prepare">Optional preview</a>
             <a href="#how-it-works">How it works</a>
             <a href="#status-api">Status API</a>
           </aside>
@@ -62,40 +64,59 @@ export default function DocsPage() {
               The endpoint opens a public WhoBurnedMore profile, selects its native share-card style, and returns the image from its own download flow. It does not recreate the cards with custom SVG or CSS.
             </p>
 
+            <section id="embed">
+              <h2>Add it to your portfolio</h2>
+              <p>
+                Replace <code>PROFILE-USERNAME</code> with your public WhoBurnedMore handle, then paste this into an HTML portfolio page. Keep the image URL unchanged: it refreshes automatically when the portfolio is viewed.
+              </p>
+              <CodeBlock label="Paste into an HTML portfolio">{`<a href="${exampleProfileUrl}">
+  <img
+    src="${productionUrl}/api/card/${exampleHandle}/hero.png"
+    alt="${exampleHandle} WhoBurnedMore stats"
+  />
+</a>`}</CodeBlock>
+              <p>For a GitHub README or another Markdown site, paste this instead:</p>
+              <CodeBlock label="Paste into Markdown">{`[![${exampleHandle} WhoBurnedMore stats](${productionUrl}/api/card/${exampleHandle}/landscape.png)](${exampleProfileUrl})`}</CodeBlock>
+              <p>
+                Do not add a timestamp or cache-busting query string. The permanent image URL is what allows the card to refresh without editing your portfolio later.
+              </p>
+            </section>
+
             <section id="endpoints">
               <h2>Endpoints</h2>
               <p>
-                Replace <code>HANDLE</code> with any public WhoBurnedMore profile handle. Successful requests serve the official PNG card; unavailable or invalid requests return a readable image error.
+                Replace <code>PROFILE-USERNAME</code> with any public WhoBurnedMore profile handle. These are the image URLs to use in your site; successful requests serve the official PNG card, while unavailable or invalid requests return a readable image error.
               </p>
               <div className="endpoint-list">
                 
                   <span>Landscape</span>
-                  <code>{productionUrl}/api/card/your-handle/landscape.png</code>
+                  <code>{productionUrl}/api/card/{exampleHandle}/landscape.png</code>
                 
                 
                   <span>Hero</span>
-                  <code>{productionUrl}/api/card/your-handle/hero.png</code>
+                  <code>{productionUrl}/api/card/{exampleHandle}/hero.png</code>
                 
                 
                   <span>Report</span>
-                  <code>{productionUrl}/api/card/your-handle/report.png</code>
+                  <code>{productionUrl}/api/card/{exampleHandle}/report.png</code>
                 
               </div>
-              <p>For example, a profile README can use the Landscape card:</p>
+              <p>Choose one style and use the same URL permanently. The card checks for profile changes automatically while it is being viewed.</p>
               <CodeBlock label="README markup">{`<p align="center">
- <a href="https://whoburnedmore.com/u/your-handle">
+ <a href="${exampleProfileUrl}">
   <img
-    src="${productionUrl}/api/card/your-handle/landscape.png"
+    src="${productionUrl}/api/card/${exampleHandle}/landscape.png"
+    alt="${exampleHandle} WhoBurnedMore stats"
   />
 </a>
 </p>`}</CodeBlock>
-              <p>Use the same URL pattern for any user and either <code>hero.png</code> or <code>report.png</code>.</p>
+              <p>Use <code>hero.png</code> or <code>report.png</code> in the same way for a different layout.</p>
             </section>
 
             <section id="prepare">
-              <h2>Prepare before publishing</h2>
+              <h2>Optional: preview before publishing</h2>
               <p>
-                Use the playground before copying a new URL. It calls the preparation API, persists the PNG, and verifies the stable endpoint before enabling copy. This keeps GitHub&apos;s first image request on the fast path.
+                The playground can generate a preview before you publish, but it is not required for ongoing updates. Paste an image URL above into your site; do not paste this preparation request into your portfolio.
               </p>
               <CodeBlock label="Preparation API">
 {`POST ${productionUrl}/api/card/prepare
@@ -116,7 +137,7 @@ Content-Type: application/json
                 <li>The route validates the requested public handle and card style.</li>
                 <li>Next&apos;s Data Cache checks for a completed hot PNG.</li>
                 <li>On a miss, TiDB resolves the current immutable image in Vercel Blob.</li>
-                <li>A stale card is returned immediately while the profile fingerprint is refreshed in the background.</li>
+                <li>After the refresh window, the next embed request returns the last ready card and refreshes its profile fingerprint in the background.</li>
                 <li>Chromium runs when visible profile data or the renderer version changes, with a guarded retry when fingerprint extraction is unavailable.</li>
               </ol>
               <p>

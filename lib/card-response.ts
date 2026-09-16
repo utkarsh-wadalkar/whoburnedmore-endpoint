@@ -1,8 +1,8 @@
-// GitHub's image proxy keys cards by URL.  A browser-only `public` response can
-// therefore keep serving an old card even after its source data has refreshed.
-// Require revalidation at the proxy while allowing the origin CDN a short
-// coalescing window for repeated README requests.
-export const CARD_CACHE_CONTROL = "public, max-age=0, s-maxage=60, must-revalidate";
+// GitHub's image proxy keys cards by URL. A `public` response with no browser
+// lifetime can therefore keep serving an old card without reaching this route.
+// Every embed must revalidate, but Vercel may coalesce origin requests briefly.
+export const CARD_CACHE_CONTROL = "public, max-age=0, must-revalidate";
+export const CDN_CARD_CACHE_CONTROL = "public, max-age=60";
 
 const ERROR_CACHE_CONTROL = "no-store";
 
@@ -19,8 +19,10 @@ export function createCardImageResponse(
 ): Response {
   const headers = new Headers({
     "cache-control": CARD_CACHE_CONTROL,
+    "cdn-cache-control": CDN_CARD_CACHE_CONTROL,
     "content-type": contentType,
     "content-disposition": "inline",
+    "vercel-cdn-cache-control": CDN_CARD_CACHE_CONTROL,
     "x-content-type-options": "nosniff",
   });
   if (options.etag) headers.set("etag", options.etag);
