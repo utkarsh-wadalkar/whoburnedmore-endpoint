@@ -104,9 +104,9 @@ export default function Home() {
           <p>
             <strong>For every public profile.</strong> The profile decides its own sources, metrics, and layout.
           </p>
-          <p>
-            <strong>One stable image.</strong> A 15-minute CDN cache keeps README refreshed, inexpensive.
-          </p>
+              <p>
+                <strong>One stable image.</strong> README image proxies revalidate it automatically as your data refreshes.
+              </p>
         </section>
 
         <section className="formats section-shell" id="formats">

@@ -86,7 +86,7 @@ pnpm build
 vercel --prod
 ```
 
-At runtime, the deployment bundles `@sparticuz/chromium`, so it does not depend on downloading a browser archive while serving a README image. Completed PNGs are also held in Next's shared Data Cache for 15 minutes, allowing GitHub's short-lived image proxy to receive cached cards promptly.
+At runtime, the deployment bundles `@sparticuz/chromium`, so it does not depend on downloading a browser archive while serving a README image. Persistent cards are refreshed from their profile data every 15 minutes; their stable URLs require README image proxies to revalidate so refreshed cards become visible without changing README markup.
 
 TiDB render claims use a 90-second lease and a global budget of 18 new Chromium renders per minute. Cached or retained cards continue to serve while that budget is saturated, and cold preparation requests retry through the existing `202` flow. Origin metrics are written from `after()` without process-local buffering, so serverless instance retirement does not discard a pending counter batch.
 

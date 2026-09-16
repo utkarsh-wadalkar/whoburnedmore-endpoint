@@ -38,6 +38,8 @@ describe("card route helpers", () => {
 
     expect(response.headers.get("content-type")).toBe("image/png");
     expect(response.headers.get("cache-control")).toBe(CARD_CACHE_CONTROL);
+    expect(response.headers.get("cache-control")).toContain("max-age=0");
+    expect(response.headers.get("cache-control")).toContain("must-revalidate");
     expect(response.headers.get("etag")).toBe('"card-hash"');
     expect(response.headers.get("last-modified")).toBe("Thu, 10 Sep 2026 10:00:00 GMT");
     expect(Array.from(new Uint8Array(await response.arrayBuffer()))).toEqual([137, 80, 78, 71]);

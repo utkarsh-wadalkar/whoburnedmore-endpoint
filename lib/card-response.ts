@@ -1,4 +1,8 @@
-export const CARD_CACHE_CONTROL = "public, s-maxage=900, stale-while-revalidate=3600";
+// GitHub's image proxy keys cards by URL.  A browser-only `public` response can
+// therefore keep serving an old card even after its source data has refreshed.
+// Require revalidation at the proxy while allowing the origin CDN a short
+// coalescing window for repeated README requests.
+export const CARD_CACHE_CONTROL = "public, max-age=0, s-maxage=60, must-revalidate";
 
 const ERROR_CACHE_CONTROL = "no-store";
 
