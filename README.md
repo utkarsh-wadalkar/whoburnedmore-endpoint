@@ -25,7 +25,16 @@ For example, a profile README can use the Landscape card:
   </a>
 </p>
 ```
-
+That looks like this 
+<p align="center">
+  <a href="https://whoburnedmore.com/u/utkarsh-wadalkar">
+    <img
+      src="https://wbm-card.vercel.app/api/card/utkarsh-wadalkar/landscape.png"
+      width="520"
+      alt="Utkarsh's WhoBurnedMore usage"
+    />
+  </a>
+</p>
 Use the same URL pattern for any user and either `hero.png` or `report.png`.
 
 ## How it works
